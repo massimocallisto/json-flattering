@@ -2,7 +2,7 @@ import json
 import time
 
 import paho.mqtt.client as mqtt
-# import logging
+import logging
 import traceback
 import os
 import sys
@@ -26,34 +26,34 @@ MQTT_OUT = {
     'client' : None
 }
 
-# logger = logging.getLogger("mqtt_connector")
+logger = logging.getLogger("mqtt_connector")
 
 
 def on_connect_in(client, userdata, flags, rc):
     client.subscribe(MQTT_IN['source_topic'])
-    print("CONNECTED to IN BROKER " + MQTT_IN['host'] + " AND SUBSCRIBED to: " + MQTT_IN['source_topic'])
+    logger.info("CONNECTED to IN BROKER " + MQTT_IN['host'] + " AND SUBSCRIBED to: " + MQTT_IN['source_topic'])
 
 
 def on_connect_out_2(client, userdata, flags, rc):
-    print("CONNECTED to OUT broker " + MQTT_OUT['host'])
+    logger.info("CONNECTED to OUT broker " + MQTT_OUT['host'])
 
 
 def on_message_in(client, userdata, msg):
     try:
-        print(f"got new msg on topic {msg.topic}")
         text = msg.payload.decode('utf-8')
-        print(f"text: {text}")
+        logger.info(f"got new msg on topic {msg.topic}\nText: {text}")
         json_text = flatter_json(text)
-        #print(f"publishing msg {json_text} on {publish_topic}")
-        #client.publish(publish_topic, payload=json.dumps(json_text))
+
         if MQTT_OUT["client"] is not None:
             curr_client = MQTT_OUT["client"]
         else:
             if MQTT_IN["source_topic"] == "#":
-                print("You cannot publish on the same broker by using # subscription otherwise a loop will happen!")
+                logger.warning("You cannot publish on the same broker by using # subscription otherwise "
+                               "a loop will happen!")
                 return
             if msg.topic.startswith(MQTT_OUT["out_topic"]):
-                print(f"Loop detected! Input topic {msg.topic} start with out topic" + MQTT_OUT["out_topic"] + "!")
+                logger.warning(f"Loop detected! Input topic {msg.topic} start with out topic"
+                               + MQTT_OUT["out_topic"] + "!")
                 return
             curr_client = client
 
@@ -64,7 +64,7 @@ def on_message_in(client, userdata, msg):
         else:
             publish_topic = publish_topic + msg.topic
 
-        print(f"publish on {publish_topic} new message {json_text}")
+        logger.info(f"publish on {publish_topic} new message {json_text}")
         curr_client.publish(publish_topic, payload=json.dumps(json_text))
 
     except Exception as e:
@@ -88,14 +88,16 @@ def flatter_json(text):
 
 
 def on_disconnect_in(client, userdata, rc):
-    print("Disconnected MQTT BROKER")
+    logger.info("Disconnected MQTT BROKER")
+
 
 def on_message_out(client, userdata, rc):
-    print("Disconnected MQTT BROKER")
+    #logger.info("on_message_out MQTT BROKER")
+    pass
 
 
 def get_client(username: str = None, password: str = None, on_connect=None, on_message=None,on_disconnect=None):
-    client = mqtt.Client(transport='tcp', client_id='mqtt-tz-module')
+    client = mqtt.Client(transport='tcp', client_id='flatter'+str(time.time()))
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
@@ -154,15 +156,16 @@ if __name__ == '__main__':
     wait_time = 3
     while True:
         time.sleep(wait_time)
-        print("wake up...")
+        logger.info("wake up...")
         if not MQTT_IN["client"].is_connected() \
                 or not MQTT_OUT["client"].is_connected():
             if counter == 10:
-                print(f"too long waiting.. going to exit after {wait_time} secs")
+                logger.error(f"too long waiting.. going to exit after {wait_time} secs")
+                break
 
             wait_time = wait_time + counter
             counter = counter + 1
-            print(f"warning.. going to wait for reconnect... sleep for {wait_time} secs")
+            logger.warning(f"going to wait for reconnect... sleep for {wait_time} secs")
         else:
             counter = 0
 
