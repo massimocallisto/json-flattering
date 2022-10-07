@@ -1,0 +1,18 @@
+[[package]]
+name = "paho-mqtt"
+version = "1.6.1"
+description = "MQTT version 5.0/3.1.1 client class"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+proxy = ["pysocks"]
+
+[metadata]
+lock-version = "1.1"
+python-versions = "^3.9"
+content-hash = "cee90c9a2283960159e668a7116f37840e107f3c5396fc01945691d58d4d5174"
+
+[metadata.files]
+paho-mqtt = []
