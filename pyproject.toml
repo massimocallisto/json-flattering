@@ -7,6 +7,8 @@ authors = ["develpoper <developer@smartspace.it>"]
 [tool.poetry.dependencies]
 python = "^3.9"
 paho-mqtt = "^1.6.1"
+tb-mqtt-client = "^1.5"
+psutil = "^5.9.6"
 
 [tool.poetry.dev-dependencies]
 
