@@ -9,11 +9,41 @@ import os
 import sys
 from datetime import datetime
 from tb_gateway_mqtt import TBGatewayMqttClient
-
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("mqtt_connector")
 
-use_tbgw = bool(os.getenv('THINGSBOARD_GW', "false"))
+def _set_environment():
+    env_file_path = '.env'
+    json_file_path = 'config.json'
+
+    # Check if the file exists
+    if os.path.exists(env_file_path):
+        # Open the file and read its contents
+        with open(env_file_path, 'r') as file:
+            lines = file.readlines()
+            # Iterate through each line
+            for line in lines:
+                # Remove whitespace and split the line by '='
+                key, value = line.strip().split('=')
+                # Set the environmental variable
+                os.environ[key] = value
+                logger.info(f"SET: os.environ[{key}] = {value}")
+    else:
+        logger.info("File not found or unable to read .env file.")
+
+    if os.path.exists(json_file_path):
+        for k, v in json.load(open(json_file_path)).items():
+            print(f"SET: os.environ[{k}] = {v}")
+            os.environ[k] = v
+    else:
+        logger.info("File not found or unable to read config.json file.")
+
+_set_environment()
+use_tbgw = os.getenv('THINGSBOARD_GW', "false") == "true"
 logger.info("Using ThingsBoard gateway? " + str(use_tbgw))
+
+for name, value in os.environ.items():
+    print("{0}: {1}".format(name, value))
 
 MQTT_IN = {
     'host': os.getenv('MQTT_IN_BROKER', "localhost"),
@@ -104,7 +134,7 @@ def on_message_in(client, userdata, msg):
             json_str = json.dumps(json_text)
             send_to_thingsboard(json_str)
         else:
-            send_to_mqtt(client, json_text)
+            send_to_mqtt(client, msg.topic, json_text)
 
     except Exception as e:
         print(traceback.format_exc())
@@ -226,7 +256,7 @@ if __name__ == '__main__':
         
         logger.info("wake up...")
         if not MQTT_IN["client"].is_connected() \
-                or (not use_tbgw and not MQTT_OUT["client"].is_connected()):
+                or (MQTT_OUT["client"] and not MQTT_OUT["client"].is_connected()):
             if counter == 10:
                 logger.error(f"too long waiting.. going to exit after {wait_time} secs")
                 break
