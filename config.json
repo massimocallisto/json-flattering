@@ -3,11 +3,12 @@
   "MQTT_IN_PORT": "1883",
   "MQTT_IN_USERNAME": "",
   "MQTT_IN_PASSWORD": "",
-  "MQTT_IN_TOPIC": "/sample.it/#",
-  "-MQTT_OUT_BROKER": "localhost",
+  "MQTT_IN_TOPIC": "/jz/#",
+  "MQTT_OUT_BROKER": "193.205.92.131",
   "-MQTT_OUT_PORT": "1882",
-  "-QTT_OUT_USERNAME": "",
+  "--MQTT_OUT_BROKER": "localhost",
   "-MQTT_OUT_PASSWORD": "",
   "MQTT_OUT_TOPIC_PREFIX": "/flat",
-  "THINGSBOARD_GW": "false"
+  "THINGSBOARD_GW": "true",
+  "THINGSBOARD_GW_TOKEN" : "GATEWAY_TEST_TOKEN"
 }

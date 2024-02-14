@@ -9,7 +9,8 @@ import os
 import sys
 from datetime import datetime
 from tb_gateway_mqtt import TBGatewayMqttClient
-logging.basicConfig(level=logging.DEBUG)
+
+logging.basicConfig(filename="std.log", level=logging.DEBUG)
 logger = logging.getLogger("mqtt_connector")
 
 def _set_environment():
@@ -40,6 +41,8 @@ def _set_environment():
 
 _set_environment()
 use_tbgw = os.getenv('THINGSBOARD_GW', "false") == "true"
+if use_tbgw :
+    gateway_token = os.getenv('THINGSBOARD_GW_TOKEN', "xxxx")
 logger.info("Using ThingsBoard gateway? " + str(use_tbgw))
 
 for name, value in os.environ.items():
@@ -236,7 +239,9 @@ if __name__ == '__main__':
 
     # SET OUT CLIENT
     if use_tbgw:
-        gateway = TBGatewayMqttClient(MQTT_OUT["host"], MQTT_OUT["port"], MQTT_OUT["username"], MQTT_OUT["password"])
+        gateway = TBGatewayMqttClient(MQTT_OUT["host"], MQTT_OUT["port"], gateway_token)
+        #gateway = TBGatewayMqttClient("193.205.92.131", 1883, "zrXhq3axnjp0FJpPzGqp")
+
         MQTT_OUT["gateway"] = gateway
         gateway.connect()
     else:
