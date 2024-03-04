@@ -19,6 +19,8 @@ FROM python:3.11-slim-buster as runtime
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
+RUN pip install mmh3
+
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY main.py .

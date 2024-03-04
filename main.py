@@ -10,7 +10,8 @@ import sys
 from datetime import datetime
 from tb_gateway_mqtt import TBGatewayMqttClient
 
-logging.basicConfig(filename="std.log", level=logging.DEBUG)
+#logging.basicConfig(filename="std.log", level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("mqtt_connector")
 
 def _set_environment():
@@ -34,7 +35,7 @@ def _set_environment():
 
     if os.path.exists(json_file_path):
         for k, v in json.load(open(json_file_path)).items():
-            print(f"SET: os.environ[{k}] = {v}")
+            logger.info(f"SET: os.environ[{k}] = {v}")
             os.environ[k] = v
     else:
         logger.info("File not found or unable to read config.json file.")
@@ -46,7 +47,7 @@ if use_tbgw :
 logger.info("Using ThingsBoard gateway? " + str(use_tbgw))
 
 for name, value in os.environ.items():
-    print("{0}: {1}".format(name, value))
+    logger.info("{0}: {1}".format(name, value))
 
 MQTT_IN = {
     'host': os.getenv('MQTT_IN_BROKER', "localhost"),
