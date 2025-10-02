@@ -52,6 +52,7 @@ for name, value in os.environ.items():
 MQTT_IN = {
     'host': os.getenv('MQTT_IN_BROKER', "localhost"),
     'port': int(os.getenv('MQTT_IN_PORT', "1883")),
+    'transport': os.getenv('MQTT_IN_TRANSPORT', "tcp"),
     'username': os.getenv('MQTT_IN_USERNAME', ""),
     'password': os.getenv('MQTT_IN_PASSWORD', ""),
     'source_topic': os.getenv('MQTT_IN_TOPIC', "/in/#"),
@@ -61,6 +62,7 @@ MQTT_IN = {
 MQTT_OUT = {
     'host': os.getenv('MQTT_OUT_BROKER', None),
     'port': int(os.getenv('MQTT_OUT_PORT', "1883")),
+    'transport': os.getenv('MQTT_OUT_TRANSPORT', "tcp"),
     'username': os.getenv('MQTT_OUT_USERNAME', ""),
     'password': os.getenv('MQTT_OUT_PASSWORD', ""),
     'out_topic': os.getenv('MQTT_OUT_TOPIC_PREFIX', "/flat"),
@@ -181,7 +183,8 @@ def set_mqtt_out():
             username=MQTT_OUT["username"],
             password=MQTT_OUT["password"],
             on_connect=on_connect_out_2,
-            on_disconnect=on_disconnect_in
+            on_disconnect=on_disconnect_in,
+            transport=MQTT_OUT["transport"]
         )
         client_out.connect(
             MQTT_OUT["host"],
@@ -197,21 +200,22 @@ def set_mqtt_out():
                                                  + str(MQTT_IN["port"])) + " for flattering output!")
 
 
-def get_client(username: str = None, password: str = None, on_connect=None, on_message=None, on_disconnect=None):
-    client = mqtt.Client(transport='tcp', client_id='flatter' + str(time.time()))
+def get_client(username: str = None, password: str = None, on_connect=None, on_message=None, on_disconnect=None, transport:str="tcp"):
+    client = mqtt.Client(transport=transport, client_id='flatter' + str(time.time()))
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
+    
     if username is not None or username != "":
         client.username_pw_set(
             username=username,
             password=password
         )
-    # context = ssl.SSLContext()
-    # client.tls_set_context()
-    # callback = on_badge_message
-    # main_topic = topic
-
+    
+    # Add TLS configuration for WebSocket connection
+    if transport == "websockets":
+        client.tls_set()  # Uses default certification validation
+    
     return client
 
 
@@ -230,7 +234,8 @@ if __name__ == '__main__':
         password=MQTT_IN["password"],
         on_connect=on_connect_in,
         on_message=on_message_in,
-        on_disconnect=on_disconnect_in
+        on_disconnect=on_disconnect_in,
+        transport=MQTT_IN["transport"]
     )
     client_in.connect(
         MQTT_IN["host"],
