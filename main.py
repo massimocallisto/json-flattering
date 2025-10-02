@@ -166,7 +166,7 @@ def flatter_json(text):
 
     if "readings" in json_text:
         readings = json_text["readings"]
-        objectValue = readings[0]
+        objectValue = readings[0]["objectValue"]
         return objectValue
 
 
