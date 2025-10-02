@@ -1,15 +1,15 @@
 {
-  "MQTT_IN_BROKER": "localhost",
-  "MQTT_IN_PORT": "1883",
-  "-MQTT_IN_TRANSPORT": "websockets",
-  "-MQTT_IN_USERNAME": "",
-  "-MQTT_IN_PASSWORD": "",
+  "MQTT_IN_BROKER": "93-38-124-77.ip70.fastwebnet.it",
+  "MQTT_IN_PORT": "443",
+  "MQTT_IN_TRANSPORT": "websockets",
+  "MQTT_IN_USERNAME": "bridge-unicam",
+  "MQTT_IN_PASSWORD": "Passw0rd!1",
   "MQTT_IN_TOPIC": "/#",
   "MQTT_OUT_BROKER": "193.205.92.195",
   "MQTT_OUT_PORT": "1882",
   "--MQTT_OUT_BROKER": "localhost",
   "-MQTT_OUT_PASSWORD": "",
-  "MQTT_OUT_TOPIC_PREFIX": "/flat",
+  "MQTT_OUT_TOPIC_PREFIX": "",
   "THINGSBOARD_GW": "false",
   "THINGSBOARD_GW_TOKEN" : "GATEWAY_TEST_TOKEN"
 }

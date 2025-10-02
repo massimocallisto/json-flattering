@@ -163,6 +163,13 @@ def flatter_json(text):
         for k, v in meta.items():
             json_text[k] = v
         del json_text["meta"]
+
+    if "readings" in json_text:
+        readings = json_text["readings"]
+        objectValue = readings[0]
+        return objectValue
+
+
     return json_text
 
 
