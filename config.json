@@ -1,6 +1,6 @@
 {
-  "MQTT_IN_BROKER": "93-38-124-77.ip70.fastwebnet.it",
-  "MQTT_IN_PORT": "443",
+  "MQTT_IN_BROKER": "localhost",
+  "MQTT_IN_PORT": "1883",
   "-MQTT_IN_TRANSPORT": "websockets",
   "-MQTT_IN_USERNAME": "",
   "-MQTT_IN_PASSWORD": "",

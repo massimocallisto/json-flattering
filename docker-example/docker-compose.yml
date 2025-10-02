@@ -1,0 +1,10 @@
+
+version: '3.8'
+
+services:
+  json-flatterer:
+    image: massimocallisto/json-flattering:1.0.1
+    container_name: flat
+    volumes:
+      - ./config.json:/app/config.json
+    restart: unless-stopped
