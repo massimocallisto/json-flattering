@@ -1,6 +1,8 @@
 import json
 import time
 import psutil
+import re
+
 
 import paho.mqtt.client as mqtt
 import logging
@@ -135,7 +137,7 @@ def on_message_in(client, userdata, msg):
     try:
         text = msg.payload.decode('utf-8')
         logger.info(f"got new msg on topic {msg.topic}\nText: {text}")
-        json_text = flatter_json(text)
+        json_text = flatter_json(text, topic=msg.topic)
         if use_tbgw:
             json_str = json.dumps(json_text)
             send_to_thingsboard(json_str)
@@ -150,27 +152,68 @@ def on_connect_out(client, userdata, msg):
     pass
 
 
-def flatter_json(text):
+# Regex:
+#  - ^/?                  : opzionale slash iniziale
+#  - (?:bridge[^/]+/)?    : prefisso opzionale tipo /bridgeap/, /bridge1/, /bridge-foo/, ecc.
+#  - (?P<tenant>[^/]+)    : TENANT (tutto fino al prossimo '/')
+#  - /(?P<installation_id>[^/]+) : INSTALLATION_ID (il segmento subito dopo TENANT)
+#  - (?:/|$)              : seguito da uno slash o fine stringa
+_TOPIC_RE = re.compile(
+    r"^/?(?:bridge[^/]+/)?(?P<tenant>[^/]+)/(?P<installation_id>[^/]+)(?:/|$)"
+)
+
+def extract_tenant_installation(topic: str):
+    """
+    Estrae TENANT e INSTALLATION_ID da un topic MQTT.
+
+    Gestisce sia i topic standard:        /TENANT/INSTALLATION_ID/...
+    sia quelli con prefisso di backup:    /bridge*/TENANT/INSTALLATION_ID/...
+
+    Ritorna (tenant, installation_id) oppure (None, None) se non combacia.
+    """
+    if topic is None:
+        return None, None
+    topic = topic.strip()
+    m = _TOPIC_RE.match(topic)
+    if not m:
+        return None, None
+    return m.group("tenant"), m.group("installation_id")
+
+
+
+def flatter_json(text, topic=None):
     # now = datetime.now().isoformat()
     json_text = json.loads(text)
+    new_message = {}
+
     if "m" in json_text:
         for elem in json_text["m"]:
             if "k" in elem and "v" in elem:
                 json_text[elem["k"]] = elem["v"]
         del json_text["m"]
+        new_message = json_text
+
     if "meta" in json_text:
         meta = json_text["meta"]
         for k, v in meta.items():
             json_text[k] = v
         del json_text["meta"]
+        new_message = json_text
 
     if "readings" in json_text:
         readings = json_text["readings"]
         objectValue = readings[0]["objectValue"]
-        return objectValue
+        new_message = objectValue
+    
+    # Add tenant and installation_id extraction if topic is provided
+    if topic:
+        tenant, installation_id = extract_tenant_installation(topic)
+        if tenant and installation_id:
+            logger.info(f"Extracted tenant: {tenant}, installation_id: {installation_id} from topic: {topic}")
+            new_message['tenant'] = tenant
+            new_message['installation_id'] = installation_id
 
-
-    return json_text
+    return new_message
 
 
 def on_disconnect_in(client, userdata, rc):
