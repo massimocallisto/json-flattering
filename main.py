@@ -73,8 +73,16 @@ MQTT_OUT = {
 }
 
 def on_connect_in(client, userdata, flags, rc):
-    client.subscribe(MQTT_IN['source_topic'])
-    logger.info("CONNECTED to IN BROKER " + MQTT_IN['host'] + " AND SUBSCRIBED to: " + MQTT_IN['source_topic'])
+    topic = MQTT_IN['source_topic']
+    logger.info("CONNECT to IN BROKER " + MQTT_IN['host'])
+    if "," in topic:
+        topics = topic.split(",")
+        for t in topics:
+            client.subscribe(t)
+            logger.info("SUBSCRIBED to: " + t)
+    else:
+        client.subscribe(topic)
+        logger.info("SUBSCRIBED to: " + topic)
 
 
 def on_connect_out_2(client, userdata, flags, rc):
@@ -92,20 +100,41 @@ def detect_loop(topic_in : str):
 
     return False
 
-def send_to_thingsboard(json_str: str):
+def send_to_thingsboard(json_str: str, topic_in : str = ""):
     if MQTT_OUT["gateway"] is None:
         return
+
     json_obj = json.loads(json_str)
     json_to_send = json_obj
-    device_ref = json_obj['id']
-    device_type = json_obj['sensorType']
-    device_panid = json_obj['panid']
-    device_id = device_type + "_" + device_panid + "_" + device_ref
+    device_id = None
+    is_gateway = False
 
-    MQTT_OUT["gateway"].gw_connect_device(device_id)
-    logging.info("Sending temperature value to " + device_id)
-    MQTT_OUT["gateway"].gw_send_telemetry(device_id, json_to_send)
-    MQTT_OUT["gateway"].gw_disconnect_device(device_id)
+    if "/device/message" in topic_in:
+        device_ref = json_obj['id']
+        device_type = json_obj['sensorType']
+        device_panid = json_obj['panid']
+        device_id = f"{device_type}-{device_panid}-{device_ref}"
+    elif "/accelerometer/message" in topic_in or "/gateway/message" in topic_in:
+        #/ sacconi / ap / accelerometer / message / dipme3
+        device_ref = json_obj['id']
+        device_type = json_obj['sensorType']
+        device_id = f"{device_type}-{device_ref}"
+        if "/gateway/message" in topic_in:
+            is_gateway = True
+
+    if device_id is None:
+        logging.warning(f"No device id found in message in {topic_in}")
+        return
+
+    if not is_gateway:
+        MQTT_OUT["gateway"].gw_connect_device(device_id)
+        logging.info("Sending message value to " + device_id)
+        MQTT_OUT["gateway"].gw_send_telemetry(device_id, json_to_send)
+        MQTT_OUT["gateway"].gw_disconnect_device(device_id)
+    else:
+        logging.info("Sent gateway telemetry" + device_id)
+        MQTT_OUT["gateway"].send_telemetry(json_to_send)
+
 
 def send_to_mqtt(client, topic_in : str, json_text):
     if MQTT_OUT["client"] is not None:
@@ -141,7 +170,7 @@ def on_message_in(client, userdata, msg):
         json_text = flatter_json(text, topic=msg.topic)
         if use_tbgw:
             json_str = json.dumps(json_text)
-            send_to_thingsboard(json_str)
+            send_to_thingsboard(json_str, topic_in=msg.topic)
         else:
             send_to_mqtt(client, msg.topic, json_text)
 
