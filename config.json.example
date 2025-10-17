@@ -1,0 +1,15 @@
+{
+  "MQTT_IN_BROKER": "localhost",
+  "MQTT_IN_PORT": "1883",
+  "MQTT_IN_TRANSPORT": "tcp",
+  "MQTT_IN_USERNAME": "",
+  "MQTT_IN_PASSWORD": "",
+  "MQTT_IN_TOPIC": "/#",
+  "MQTT_OUT_BROKER": "localhost",
+  "MQTT_OUT_PORT": "1883",
+  "--MQTT_OUT_BROKER": "localhost",
+  "-MQTT_OUT_PASSWORD": "",
+  "MQTT_OUT_TOPIC_PREFIX": "",
+  "THINGSBOARD_GW": "false",
+  "THINGSBOARD_GW_TOKEN" : "TOKEN"
+}

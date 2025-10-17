@@ -97,9 +97,10 @@ def send_to_thingsboard(json_str: str):
         return
     json_obj = json.loads(json_str)
     json_to_send = json_obj
-    device_ref = json_obj['ref']
-    device_type = json_obj['type']
-    device_id = device_type + "_" + device_ref
+    device_ref = json_obj['id']
+    device_type = json_obj['sensorType']
+    device_panid = json_obj['panid']
+    device_id = device_type + "_" + device_panid + "_" + device_ref
 
     MQTT_OUT["gateway"].gw_connect_device(device_id)
     logging.info("Sending temperature value to " + device_id)
@@ -184,7 +185,7 @@ def extract_tenant_installation(topic: str):
 def flatter_json(text, topic=None):
     # now = datetime.now().isoformat()
     json_text = json.loads(text)
-    new_message = {}
+    new_message = json_text
 
     if "m" in json_text:
         for elem in json_text["m"]:
