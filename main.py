@@ -166,7 +166,7 @@ def send_to_mqtt(client, topic_in : str, json_text):
 def on_message_in(client, userdata, msg):
     try:
         text = msg.payload.decode('utf-8')
-        logger.info(f"got new msg on topic {msg.topic}\nText: {text}")
+        logger.info(f"got new msg on topic {msg.topic}")
         json_text = flatter_json(text, topic=msg.topic)
         if use_tbgw:
             json_str = json.dumps(json_text)
