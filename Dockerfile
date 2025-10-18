@@ -24,6 +24,6 @@ RUN pip install mmh3
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY main.py .
-COPY config.json .
+COPY config.json.example config.json
 
 ENTRYPOINT ["python", "-u", "main.py"]
