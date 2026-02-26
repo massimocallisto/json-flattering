@@ -1,7 +1,7 @@
 import json
 import time
 import psutil
-import re
+
 
 
 import paho.mqtt.client as mqtt
@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime
 from tb_gateway_mqtt import TBGatewayMqttClient
-from flattering import flatter_json
+from flattering import flatter_json, etl
 
 #logging.basicConfig(filename="std.log", level=logging.DEBUG)
 logging.basicConfig(level=logging.DEBUG)
@@ -169,6 +169,8 @@ def on_message_in(client, userdata, msg):
         text = msg.payload.decode('utf-8')
         logger.info(f"got new msg on topic {msg.topic}")
         json_text = flatter_json(text, topic=msg.topic)
+        json_text = etl(json_text, topic=msg.topic)
+
         if use_tbgw:
             json_str = json.dumps(json_text)
             send_to_thingsboard(json_str, topic_in=msg.topic)
@@ -181,34 +183,6 @@ def on_message_in(client, userdata, msg):
 
 def on_connect_out(client, userdata, msg):
     pass
-
-
-# Regex:
-#  - ^/?                  : opzionale slash iniziale
-#  - (?:bridge[^/]+/)?    : prefisso opzionale tipo /bridgeap/, /bridge1/, /bridge-foo/, ecc.
-#  - (?P<tenant>[^/]+)    : TENANT (tutto fino al prossimo '/')
-#  - /(?P<installation_id>[^/]+) : INSTALLATION_ID (il segmento subito dopo TENANT)
-#  - (?:/|$)              : seguito da uno slash o fine stringa
-_TOPIC_RE = re.compile(
-    r"^/?(?:bridge[^/]+/)?(?P<tenant>[^/]+)/(?P<installation_id>[^/]+)(?:/|$)"
-)
-
-def extract_tenant_installation(topic: str):
-    """
-    Estrae TENANT e INSTALLATION_ID da un topic MQTT.
-
-    Gestisce sia i topic standard:        /TENANT/INSTALLATION_ID/...
-    sia quelli con prefisso di backup:    /bridge*/TENANT/INSTALLATION_ID/...
-
-    Ritorna (tenant, installation_id) oppure (None, None) se non combacia.
-    """
-    if topic is None:
-        return None, None
-    topic = topic.strip()
-    m = _TOPIC_RE.match(topic)
-    if not m:
-        return None, None
-    return m.group("tenant"), m.group("installation_id")
 
 def on_disconnect_in(client, userdata, rc):
     logger.info("Disconnected MQTT BROKER")

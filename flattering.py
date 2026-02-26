@@ -1,3 +1,19 @@
+import re
+import json
+import logging
+from datetime import datetime
+
+# Regex:
+#  - ^/?                  : opzionale slash iniziale
+#  - (?:bridge[^/]+/)?    : prefisso opzionale tipo /bridgeap/, /bridge1/, /bridge-foo/, ecc.
+#  - (?P<tenant>[^/]+)    : TENANT (tutto fino al prossimo '/')
+#  - /(?P<installation_id>[^/]+) : INSTALLATION_ID (il segmento subito dopo TENANT)
+#  - (?:/|$)              : seguito da uno slash o fine stringa
+_TOPIC_RE = re.compile(
+    r"^/?(?:bridge[^/]+/)?(?P<tenant>[^/]+)/(?P<installation_id>[^/]+)(?:/|$)"
+)
+
+logger = logging.getLogger("mqtt_connector")
 
 def extract_tenant_installation(topic: str):
     """
@@ -57,3 +73,13 @@ def flatter_json(text, topic=None):
             new_message['installation_id'] = installation_id
 
     return new_message
+
+def etl(message, topic=None):
+    if "tz" not in message:
+        if "collected_at" in message:
+            message["tz"] = datetime.fromtimestamp( message["collected_at"] ).isoformat()
+        else:
+            message["tz"] = datetime.now().isoformat()
+
+    return message
+
