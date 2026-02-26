@@ -2,6 +2,7 @@ import re
 import json
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Regex:
 #  - ^/?                  : opzionale slash iniziale
@@ -77,9 +78,9 @@ def flatter_json(text, topic=None):
 def etl(message, topic=None):
     if "tz" not in message:
         if "collected_at" in message:
-            message["tz"] = datetime.fromtimestamp( message["collected_at"] ).isoformat()
+            message["tz"] = datetime.fromtimestamp(message["collected_at"], tz=ZoneInfo("Europe/Rome")).isoformat()
         else:
-            message["tz"] = datetime.now().isoformat()
+            message["tz"] = datetime.now(tz=ZoneInfo("Europe/Rome")).isoformat()
 
     return message
 
