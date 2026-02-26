@@ -122,6 +122,8 @@ def send_to_thingsboard(json_str: str, topic_in : str = ""):
         device_id = f"{device_type}-{device_ref}"
         if "/gateway/message" in topic_in:
             is_gateway = True
+    elif "device_id" in json_obj:
+        device_id = json_obj['device_id']
 
     if device_id is None:
         logging.warning(f"No device id found in message in {topic_in}")
