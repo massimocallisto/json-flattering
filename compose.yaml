@@ -1,0 +1,24 @@
+services:
+  json-flattering:
+    build: .
+    environment:
+      MQTT_IN_BROKER: "${MQTT_IN_BROKER:?Set MQTT_IN_BROKER in .env}"
+      MQTT_IN_PORT: "${MQTT_IN_PORT:-1883}"
+      MQTT_IN_TRANSPORT: "${MQTT_IN_TRANSPORT:-tcp}"
+      MQTT_IN_USERNAME: "${MQTT_IN_USERNAME:-}"
+      MQTT_IN_PASSWORD: "${MQTT_IN_PASSWORD:-}"
+      MQTT_IN_TOPIC: "${MQTT_IN_TOPIC:-/in/#}"
+      MQTT_OUT_BROKER: "${MQTT_OUT_BROKER:?Set MQTT_OUT_BROKER in .env}"
+      MQTT_OUT_PORT: "${MQTT_OUT_PORT:-1883}"
+      MQTT_OUT_TRANSPORT: "${MQTT_OUT_TRANSPORT:-tcp}"
+      MQTT_OUT_USERNAME: "${MQTT_OUT_USERNAME:-}"
+      MQTT_OUT_PASSWORD: "${MQTT_OUT_PASSWORD:-}"
+      MQTT_OUT_TOPIC_PREFIX: "${MQTT_OUT_TOPIC_PREFIX:-/out}"
+      THINGSBOARD_GW: "${THINGSBOARD_GW:-false}"
+      THINGSBOARD_GW_TOKEN: "${THINGSBOARD_GW_TOKEN:-}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

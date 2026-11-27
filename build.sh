@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # --- Configurazione ---
-VERSION="1.1.0-dipme"
-IMAGE_NAME="massimocallisto/json-flattering"
+VERSION=$1
+IMAGE_NAME=$2
 TAG_FULL="$IMAGE_NAME:$VERSION"
 
 # 1. Comando di Build
 echo "Building $TAG_FULL..."
+exit
+
 docker build --no-cache -t "$TAG_FULL" .
 
 # Controllo esito build (Corretto il typo 'Erro')

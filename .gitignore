@@ -160,4 +160,4 @@ cython_debug/
 .idea/
 config.json
 .DS_Store
-.env
+log.txt

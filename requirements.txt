@@ -1,0 +1,13 @@
+certifi==2025.8.3
+charset-normalizer==3.4.3
+idna==3.10
+mmh3==5.2.0
+orjson==3.11.3
+paho-mqtt==2.1.0
+psutil==7.1.0
+python-dotenv==1.2.4
+requests==2.32.5
+setuptools==80.9.0
+tb-mqtt-client==1.13.9
+tb-paho-mqtt-client==2.1.2
+urllib3==2.5.0
