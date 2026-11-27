@@ -1,9 +1,8 @@
 import json
 import time
+from pathlib import Path
+
 import psutil
-
-
-
 import paho.mqtt.client as mqtt
 import logging
 import traceback
@@ -12,45 +11,30 @@ import sys
 from datetime import datetime
 from tb_gateway_mqtt import TBGatewayMqttClient
 from flattering import flatter_json, etl
+from dotenv import load_dotenv
 
-#logging.basicConfig(filename="std.log", level=logging.DEBUG)
-logging.basicConfig(level=logging.DEBUG)
+load_dotenv(
+    dotenv_path=Path(__file__).resolve().parent / ".env",
+    override=False,
+)
+
+log_level_name = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+log_level = getattr(logging, log_level_name, None)
+
+if not isinstance(log_level, int):
+    raise ValueError(f"LOG_LEVEL non valido: {log_level_name}")
+
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
 logger = logging.getLogger("mqtt_connector")
 
-def _set_environment():
-    env_file_path = '.env'
-    json_file_path = 'config.json'
-
-    # Check if the file exists
-    if os.path.exists(env_file_path):
-        # Open the file and read its contents
-        with open(env_file_path, 'r') as file:
-            lines = file.readlines()
-            # Iterate through each line
-            for line in lines:
-                # Remove whitespace and split the line by '='
-                key, value = line.strip().split('=')
-                # Set the environmental variable
-                os.environ[key] = value
-                logger.info(f"SET: os.environ[{key}] = {value}")
-    else:
-        logger.info("File not found or unable to read .env file.")
-
-    if os.path.exists(json_file_path):
-        for k, v in json.load(open(json_file_path)).items():
-            logger.info(f"SET: os.environ[{k}] = {v}")
-            os.environ[k] = v
-    else:
-        logger.info("File not found or unable to read config.json file.")
-
-_set_environment()
 use_tbgw = os.getenv('THINGSBOARD_GW', "false") == "true"
 if use_tbgw :
     gateway_token = os.getenv('THINGSBOARD_GW_TOKEN', "xxxx")
 logger.info("Using ThingsBoard gateway? " + str(use_tbgw))
-
-for name, value in os.environ.items():
-    logger.info("{0}: {1}".format(name, value))
 
 MQTT_IN = {
     'host': os.getenv('MQTT_IN_BROKER', "localhost"),
@@ -72,6 +56,26 @@ MQTT_OUT = {
     'client' : None,
     'gateway': None
 }
+
+logger.info(
+    "MQTT sorgente: broker=%s porta=%s trasporto=%s topic=%s, authentication=%s",
+    MQTT_IN["host"],
+    MQTT_IN["port"],
+    MQTT_IN["transport"],
+    MQTT_IN["source_topic"],
+    "yes" if MQTT_IN["username"] else "no"
+)
+
+logger.info(
+    "MQTT destinazione: broker=%s porta=%s trasporto=%s "
+    "prefisso_topic=%s modalità=%s, authentication=%s",
+    MQTT_OUT["host"] or MQTT_IN["host"],
+    MQTT_OUT["port"] if MQTT_OUT["host"] else MQTT_IN["port"],
+    MQTT_OUT["transport"] if MQTT_OUT["host"] else MQTT_IN["transport"],
+    MQTT_OUT["out_topic"],
+    "yes" if MQTT_OUT["username"] else "no",
+    "ThingsBoard Gateway" if use_tbgw else "MQTT",
+)
 
 def on_connect_in(client, userdata, flags, rc):
     topic = MQTT_IN['source_topic']
@@ -124,6 +128,10 @@ def send_to_thingsboard(json_str: str, topic_in : str = ""):
             is_gateway = True
     elif "device_id" in json_obj:
         device_id = json_obj['device_id']
+    elif "ref" in json_obj and "type" in json_obj :
+        device_ref = json_obj['ref']
+        device_type = json_obj['type']
+        device_id = device_type + "_" + device_ref
 
     if device_id is None:
         logging.warning(f"No device id found in message in {topic_in}")
@@ -145,14 +153,6 @@ def send_to_mqtt(client, topic_in : str, json_text):
     else:
         if detect_loop(topic_in):
             return
-        #if MQTT_IN["source_topic"] == "#":
-        #    logger.warning("You cannot publish on the same broker by using # subscription otherwise "
-        #                   "a loop will happen!")
-        #    return
-        #if msg.topic.startswith(MQTT_OUT["out_topic"]):
-        #    logger.warning(f"Loop detected! Input topic {msg.topic} start with out topic"
-        #                   + MQTT_OUT["out_topic"] + "!")
-        #    return
         curr_client = client
 
     publish_topic = MQTT_OUT["out_topic"]
@@ -162,7 +162,8 @@ def send_to_mqtt(client, topic_in : str, json_text):
     else:
         publish_topic = publish_topic + topic_in
 
-    logger.info(f"publish on {publish_topic} new message {json_text}")
+    logger.info(f"publish on {publish_topic}")
+    logger.debug(f".. new message {json_text}")
     curr_client.publish(publish_topic, payload=json.dumps(json_text))
 
 
@@ -187,8 +188,10 @@ def on_connect_out(client, userdata, msg):
     pass
 
 def on_disconnect_in(client, userdata, rc):
-    logger.info("Disconnected MQTT BROKER")
+    logger.info("Disconnected MQTT BROKER: " + MQTT_IN["host"] )
 
+def on_disconnect_out(client, userdata, rc):
+    logger.info("Disconnected OUT MQTT BROKER: " + MQTT_OUT["host"] )
 
 def on_message_out(client, userdata, rc):
     # logger.info("on_message_out MQTT BROKER")
@@ -203,7 +206,7 @@ def set_mqtt_out():
             username=MQTT_OUT["username"],
             password=MQTT_OUT["password"],
             on_connect=on_connect_out_2,
-            on_disconnect=on_disconnect_in,
+            on_disconnect=on_disconnect_out,
             transport=MQTT_OUT["transport"]
         )
         client_out.connect(
@@ -226,7 +229,7 @@ def get_client(username: str = None, password: str = None, on_connect=None, on_m
     client.on_message = on_message
     client.on_disconnect = on_disconnect
     
-    if username is not None or username != "":
+    if username:
         client.username_pw_set(
             username=username,
             password=password
@@ -276,16 +279,14 @@ if __name__ == '__main__':
     client_in.loop_start()
 
     logger.info("Start loop with simple CPU data from this client")
-    #send_cpu_memory_usage()
 
     counter = 0
     wait_time = 3
     
     while True:
         time.sleep(30)
-        #send_cpu_memory_usage()
-        
-        logger.info("wake up...")
+
+        logger.info("wake up...in broker " + MQTT_IN["host"] + ", out broker: " + MQTT_IN["host"])
         if not MQTT_IN["client"].is_connected() \
                 or (MQTT_OUT["client"] and not MQTT_OUT["client"].is_connected()):
             if counter == 10:
